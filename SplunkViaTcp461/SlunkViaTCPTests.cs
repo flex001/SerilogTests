@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -10,11 +11,14 @@ namespace SplunkViaTcp461
     [TestClass]
     public class SlunkViaTCPTests
     {
+        private const string SplunkHost = "ubuntusrv-19-001";
+        private const int SplunkPort = 1042;
+
         [TestMethod]
         public void CanLogToSplunk()
         {
-            var ip = Dns.GetHostAddresses("vs-syslogelogdev.corp.belgrid.net").First();
-            var splunkTcpSinkConnectionInfo = new SplunkTcpSinkConnectionInfo(ip, 514);
+            var ip = Dns.GetHostAddresses(SplunkHost).First();
+            var splunkTcpSinkConnectionInfo = new SplunkTcpSinkConnectionInfo(ip, SplunkPort);
             var loggerConfiguration = new LoggerConfiguration().WriteTo.SplunkViaTcp(splunkTcpSinkConnectionInfo);
             var logger = loggerConfiguration.CreateLogger();
             logger.Warning($"Dummy message sent @ {DateTime.Now:O}");
@@ -22,13 +26,27 @@ namespace SplunkViaTcp461
 
         [TestMethod]
         [ExpectedException(typeof(Exception))]
-        [Timeout(10000)]
         public void AnExceptionIsThrownWhenNoSplunk()
         {
-            var ip = IPAddress.Parse("127.0.0.1");
-            var splunkTcpSinkConnectionInfo = new SplunkTcpSinkConnectionInfo(ip, 514);
+            if (!System.Diagnostics.Debugger.IsAttached)
+            {
+                Assert.Fail("Please attach your debugger, and once the breakpoint is reached, change the IP address of the splunk server");
+            }
+
+            Serilog.Debugging.SelfLog.Enable(msg =>
+            {
+                Debug.WriteLine(msg);
+            });
+
+            var ip = Dns.GetHostAddresses(SplunkHost).First();
+            var splunkTcpSinkConnectionInfo = new SplunkTcpSinkConnectionInfo(ip, SplunkPort);
             var loggerConfiguration = new LoggerConfiguration().WriteTo.SplunkViaTcp(splunkTcpSinkConnectionInfo);
+            
             var logger = loggerConfiguration.CreateLogger();
+            
+            
+            Console.WriteLine("Release breakpoint once the ip address is renewed");
+            System.Diagnostics.Debugger.Break();
             logger.Warning($"Dummy message sent @ {DateTime.Now:O}");
         }
 
