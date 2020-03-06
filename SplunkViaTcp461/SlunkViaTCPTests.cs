@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Serilog;
 using Serilog.Core;
@@ -18,15 +19,17 @@ namespace SplunkViaTcp461
     public class SlunkViaTCPTests
     {
         private const string SplunkHost = "ubuntusrv-19-001";
-        private const string SplunkPort = "8088";
+        private const string SplunkHecPort = "8088";
+        private const string SplunkUdpTcpPort = "1042";
         //private const string HecToken = "2ede6cea-de9b-4694-a5cf-e25353bd8196";
-        private const string HecToken = "257a2c13-3336-4d70-8e04-6fb4f5f98fa5";
+        //private const string HecToken = "257a2c13-3336-4d70-8e04-6fb4f5f98fa5";
+        private const string HecToken = "69998c2e-0e38-477a-9ccd-e2671def3b18";
 
         [TestMethod]
         public void CanLogToSplunk()
         {
             using (var logger = new LoggerConfiguration()
-                .WriteTo.EventCollector($"http://{SplunkHost}:{SplunkPort}/services/collector", HecToken)
+                .WriteTo.EventCollector($"http://{SplunkHost}:{SplunkHecPort}/services/collector", HecToken)
                 .CreateLogger())
             {
                 logger.Warning($"Dummy message sent @ {DateTime.Now:O}");
@@ -49,25 +52,24 @@ namespace SplunkViaTcp461
             var handler = new HttpClientHandler();
             
             var logger =  new LoggerConfiguration()
-                .WriteTo.EventCollector($"http://{SplunkHost}:{SplunkPort}/services/collector", HecToken).CreateLogger();
+                .WriteTo.EventCollector($"http://{SplunkHost}:{SplunkHecPort}/services/collector", HecToken).CreateLogger();
             
 
             Console.WriteLine("Release breakpoint once the ip address is renewed");
             System.Diagnostics.Debugger.Break();
 
 
-            logger.Warning($"Dummy message sent @ {DateTime.Now:O}");
+            logger.Warning($"1_attemptHec Dummy message sent @ {DateTime.Now:O}");
             
             logger.Dispose();
         }
-
     }
 }
 
 
 /*
  * 
- * docker run --network splunkNet --name splunkIndexer --hostname splunkIndexer -p 8000:8000 -p 8088:8088 -e "SPLUNK_PASSWORD=splunkPwd" -e "SPLUNK_START_ARGS=--accept-license" -it splunk/splunk:latest
+ * docker run --network splunkNet --name splunkIndexer --hostname splunkIndexer -p 8000:8000 -p 8088:8088 -e "SPLUNK_PASSWORD=splunkPwd" -e "SPLUNK_START_ARGS=--accept-license" -d splunk/splunk:latest
  * docker run --network splunkNet -p 1042:1042 --name splunkForwarder --hostname splunkForwarder -e "SPLUNK_PASSWORD=splunkPwd" -e "SPLUNK_START_ARGS=--accept-license" -e "SPLUNK_STANDALONE_URL=splunkIndexer" -it splunk/universalforwarder:latest
  * 
  */
